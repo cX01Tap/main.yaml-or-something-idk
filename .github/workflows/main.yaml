@@ -1,61 +1,73 @@
-name: Build and deploy Python app to Azure Web App
+name: Build and deploy Python app to Azure Web App - phanuruj-1650703554
 
-env:
-  AZURE_WEBAPP_NAME: 'phanuruj-1650703554'   # set this to your application's name
-  PYTHON_VERSION: '3.9'               
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python version
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: '3.9'
 
       - name: Create and start virtual environment
         run: |
           python -m venv venv
           source venv/bin/activate
+      
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Zip artifact for deployment
+        run: zip release.zip ./* -r
 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
         with:
-          name: flask-api
+          name: python-app
           path: |
-            .
+            release.zip
             !venv/
+
   deploy:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: build
     environment:
-      name: 'production'
+      name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: flask-api
-          path: .
+          name: python-app
+
+      - name: Unzip artifact for deployment
+        run: unzip release.zip
 
       - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          app-name: 'your-new-app-name'  # Update to your new Web App name
+          slot-name: 'Production'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_EE1E7639C219408091C49FA527336783 }}
 
-                - name: Analyze with CodeQL
+      - name: Analyze with CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: python
@@ -63,10 +75,4 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-         category: "/language:${{matrix.language}}"
-         
-job runs-on:         
- permissions:
- actions: read
- contents: read
- security-events: write
+          category: "/language:python"
