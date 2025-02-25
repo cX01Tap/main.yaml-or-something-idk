@@ -63,7 +63,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: 'your-new-app-name'  # Update to your new Web App name
+          app-name: 'phanuruj-1650703554'  # Update to your new Web App name
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_EE1E7639C219408091C49FA527336783 }}
 
